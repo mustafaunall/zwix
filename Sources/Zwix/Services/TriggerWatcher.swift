@@ -17,7 +17,7 @@ final class TriggerWatcher {
             object: nil,
             queue: .main
         ) { [weak self] note in
-            Task { @MainActor in
+            MainActor.assumeIsolated {
                 self?.handleLaunch(note)
             }
         }
@@ -26,7 +26,7 @@ final class TriggerWatcher {
             object: nil,
             queue: .main
         ) { [weak self] note in
-            Task { @MainActor in
+            MainActor.assumeIsolated {
                 self?.handleTerminate(note)
             }
         }
