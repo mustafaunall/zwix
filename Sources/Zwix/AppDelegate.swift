@@ -10,5 +10,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let watcher = TriggerWatcher(viewModel: viewModel)
         watcher.start()
         triggerWatcher = watcher
+        MenuBarPopoverController.shared.setup(viewModel: viewModel)
     }
 }
