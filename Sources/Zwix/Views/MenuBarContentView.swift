@@ -55,7 +55,7 @@ struct MenuBarContentView: View {
             Divider()
 
             MenuRow(isActive: false) {
-                dismissMenuBarPanel()
+                MenuBarPopoverController.shared.close()
                 SettingsWindowController.shared.show(viewModel: viewModel)
             } icon: {
                 Image(systemName: "gearshape")
@@ -77,14 +77,6 @@ struct MenuBarContentView: View {
             .padding(.bottom, 6)
         }
         .frame(width: 260)
-    }
-
-    /// MenuBarExtra(.window) doesn't auto-dismiss when a button inside it is
-    /// tapped (unlike .menu style). Closing the panel's own key window before
-    /// switching focus elsewhere makes "Settings…" behave like a normal menu
-    /// item: the dropdown disappears and the new window takes focus.
-    private func dismissMenuBarPanel() {
-        NSApp.keyWindow?.close()
     }
 }
 
