@@ -42,10 +42,19 @@ struct SettingsRootView: View {
                 }
                 ToolbarItem {
                     Button {
+                        snapshotProfile()
+                    } label: {
+                        Image(systemName: "camera.viewfinder")
+                    }
+                    .help("New Profile from Currently Open Apps")
+                }
+                ToolbarItem {
+                    Button {
                         addProfile()
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .help("New Empty Profile")
                 }
             }
         } detail: {
@@ -65,6 +74,11 @@ struct SettingsRootView: View {
 
     private func addProfile() {
         let profile = viewModel.addProfile()
+        selectedProfileID = profile.id
+    }
+
+    private func snapshotProfile() {
+        let profile = viewModel.addProfileFromSnapshot()
         selectedProfileID = profile.id
     }
 
