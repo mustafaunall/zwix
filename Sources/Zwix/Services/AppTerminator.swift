@@ -12,7 +12,11 @@ enum AppTerminator {
     ]
 
     @discardableResult
-    static func terminate(_ entries: [AppEntry], protectedBundleIDs: Set<String> = []) async -> Int {
+    static func terminate(
+        _ entries: [AppEntry],
+        protectedBundleIDs: Set<String> = [],
+        gracePeriod: TimeInterval = PersistedState.defaultTerminationGracePeriod
+    ) async -> Int {
         let allProtected = hardProtectedBundleIDs.union(protectedBundleIDs)
         let targets = entries.filter { !allProtected.contains($0.bundleIdentifier) }
 
@@ -27,7 +31,7 @@ enum AppTerminator {
             killedCount += 1
         }
         guard !toForceCheck.isEmpty else { return killedCount }
-        try? await Task.sleep(for: .seconds(2))
+        try? await Task.sleep(for: .seconds(gracePeriod))
         for app in toForceCheck where !app.isTerminated {
             app.forceTerminate()
         }

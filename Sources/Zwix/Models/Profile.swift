@@ -60,18 +60,27 @@ struct Profile: Codable, Identifiable, Hashable {
 }
 
 struct PersistedState: Codable {
+    static let defaultTerminationGracePeriod: TimeInterval = 2.0
+
     var profiles: [Profile]
     var activeProfileID: UUID?
     var neverCloseApps: [AppEntry] = []
+    var terminationGracePeriod: TimeInterval = defaultTerminationGracePeriod
 
     private enum CodingKeys: String, CodingKey {
-        case profiles, activeProfileID, neverCloseApps
+        case profiles, activeProfileID, neverCloseApps, terminationGracePeriod
     }
 
-    init(profiles: [Profile], activeProfileID: UUID?, neverCloseApps: [AppEntry] = []) {
+    init(
+        profiles: [Profile],
+        activeProfileID: UUID?,
+        neverCloseApps: [AppEntry] = [],
+        terminationGracePeriod: TimeInterval = defaultTerminationGracePeriod
+    ) {
         self.profiles = profiles
         self.activeProfileID = activeProfileID
         self.neverCloseApps = neverCloseApps
+        self.terminationGracePeriod = terminationGracePeriod
     }
 
     init(from decoder: Decoder) throws {
@@ -79,5 +88,7 @@ struct PersistedState: Codable {
         profiles = try c.decode([Profile].self, forKey: .profiles)
         activeProfileID = try c.decodeIfPresent(UUID.self, forKey: .activeProfileID)
         neverCloseApps = try c.decodeIfPresent([AppEntry].self, forKey: .neverCloseApps) ?? []
+        terminationGracePeriod = try c.decodeIfPresent(TimeInterval.self, forKey: .terminationGracePeriod)
+            ?? Self.defaultTerminationGracePeriod
     }
 }

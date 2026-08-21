@@ -4,6 +4,7 @@ struct SettingsRootView: View {
     @EnvironmentObject var viewModel: ProfilesViewModel
     @State private var selectedProfileID: UUID?
     @State private var showProtectedApps = false
+    @State private var showGeneralSettings = false
 
     var body: some View {
         NavigationSplitView {
@@ -32,6 +33,14 @@ struct SettingsRootView: View {
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
             .toolbar {
+                ToolbarItem {
+                    Button {
+                        showGeneralSettings = true
+                    } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                    .help("General Settings")
+                }
                 ToolbarItem {
                     Button {
                         showProtectedApps = true
@@ -69,6 +78,9 @@ struct SettingsRootView: View {
         .frame(minWidth: 620, minHeight: 380)
         .sheet(isPresented: $showProtectedApps) {
             ProtectedAppsView()
+        }
+        .sheet(isPresented: $showGeneralSettings) {
+            GeneralSettingsView()
         }
     }
 

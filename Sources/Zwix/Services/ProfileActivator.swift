@@ -1,13 +1,18 @@
 import AppKit
 
 enum ProfileActivator {
-    static func activate(_ target: Profile, deactivating previous: Profile?, protectedBundleIDs: Set<String> = []) async {
+    static func activate(
+        _ target: Profile,
+        deactivating previous: Profile?,
+        protectedBundleIDs: Set<String> = [],
+        gracePeriod: TimeInterval = PersistedState.defaultTerminationGracePeriod
+    ) async {
         if let previous {
             let targetOpenIDs = Set(target.openApps.map(\.bundleIdentifier))
             let staleFromPrevious = previous.openApps.filter { !targetOpenIDs.contains($0.bundleIdentifier) }
-            await AppTerminator.terminate(staleFromPrevious, protectedBundleIDs: protectedBundleIDs)
+            await AppTerminator.terminate(staleFromPrevious, protectedBundleIDs: protectedBundleIDs, gracePeriod: gracePeriod)
         }
-        await AppTerminator.terminate(target.closeApps, protectedBundleIDs: protectedBundleIDs)
+        await AppTerminator.terminate(target.closeApps, protectedBundleIDs: protectedBundleIDs, gracePeriod: gracePeriod)
 
         let running = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
         for entry in target.openApps where !running.contains(entry.bundleIdentifier) {
