@@ -48,6 +48,21 @@ final class ProfilesViewModel: ObservableObject {
         return profile
     }
 
+    /// Creates a new profile whose open list is a snapshot of every
+    /// user-visible app running right now (excluding always-protected
+    /// system apps and Zwix itself).
+    @discardableResult
+    func addProfileFromSnapshot(named name: String = "Snapshot") -> Profile {
+        let openApps = RunningAppsProvider.allUserVisibleApps()
+            .compactMap { BundleInspector.entry(fromRunning: $0) }
+            .filter { !AppTerminator.hardProtectedBundleIDs.contains($0.bundleIdentifier) }
+
+        let profile = Profile(name: name, openApps: openApps)
+        profiles.append(profile)
+        persist()
+        return profile
+    }
+
     func updateProfile(_ profile: Profile) {
         guard let idx = profiles.firstIndex(where: { $0.id == profile.id }) else { return }
         profiles[idx] = profile
