@@ -78,8 +78,8 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func isTriggerAppTaken(_ bundleIdentifier: String, excluding profileID: UUID?) -> Bool {
-        profiles.contains {
-            $0.id != profileID && $0.triggerApp?.bundleIdentifier == bundleIdentifier
+        profiles.contains { profile in
+            profile.id != profileID && profile.triggerApps.contains { $0.bundleIdentifier == bundleIdentifier }
         }
     }
 

@@ -13,7 +13,7 @@ struct Profile: Codable, Identifiable, Hashable {
     var iconName: String
     var openApps: [AppEntry]
     var closeApps: [AppEntry]
-    var triggerApp: AppEntry?
+    var triggerApps: [AppEntry]
 
     init(
         id: UUID = UUID(),
@@ -21,18 +21,22 @@ struct Profile: Codable, Identifiable, Hashable {
         iconName: String = ProfileIcons.defaultIcon,
         openApps: [AppEntry] = [],
         closeApps: [AppEntry] = [],
-        triggerApp: AppEntry? = nil
+        triggerApps: [AppEntry] = []
     ) {
         self.id = id
         self.name = name
         self.iconName = iconName
         self.openApps = openApps
         self.closeApps = closeApps
-        self.triggerApp = triggerApp
+        self.triggerApps = triggerApps
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, iconName, openApps, closeApps, triggerApp
+        case id, name, iconName, openApps, closeApps, triggerApps
+    }
+
+    private enum LegacyCodingKeys: String, CodingKey {
+        case triggerApp
     }
 
     init(from decoder: Decoder) throws {
@@ -42,7 +46,16 @@ struct Profile: Codable, Identifiable, Hashable {
         iconName = try c.decodeIfPresent(String.self, forKey: .iconName) ?? ProfileIcons.defaultIcon
         openApps = try c.decodeIfPresent([AppEntry].self, forKey: .openApps) ?? []
         closeApps = try c.decodeIfPresent([AppEntry].self, forKey: .closeApps) ?? []
-        triggerApp = try c.decodeIfPresent(AppEntry.self, forKey: .triggerApp)
+        if let apps = try c.decodeIfPresent([AppEntry].self, forKey: .triggerApps) {
+            triggerApps = apps
+        } else {
+            let legacy = try decoder.container(keyedBy: LegacyCodingKeys.self)
+            if let legacyApp = try legacy.decodeIfPresent(AppEntry.self, forKey: .triggerApp) {
+                triggerApps = [legacyApp]
+            } else {
+                triggerApps = []
+            }
+        }
     }
 }
 

@@ -10,7 +10,7 @@ struct SidebarProfileRow: View {
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 1) {
                 Text(profile.name.isEmpty ? "Untitled" : profile.name)
-                Text("\(profile.openApps.count) open · \(profile.closeApps.count) close" + (profile.triggerApp != nil ? " · trigger: \(profile.triggerApp!.displayName)" : ""))
+                Text("\(profile.openApps.count) open · \(profile.closeApps.count) close" + (profile.triggerApps.isEmpty ? "" : " · \(profile.triggerApps.count) trigger\(profile.triggerApps.count == 1 ? "" : "s")"))
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }

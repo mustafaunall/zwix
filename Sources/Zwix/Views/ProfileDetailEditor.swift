@@ -52,19 +52,13 @@ struct ProfileDetailEditor: View {
                     }
                 }
 
-                card(title: "Trigger App", systemImage: "bolt.circle") {
+                card(title: "Trigger Apps", systemImage: "bolt.circle") {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Launching this app automatically activates this profile.")
+                        Text("Launching any of these apps automatically activates this profile.")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        if let trigger = profile.triggerApp {
-                            HStack {
-                                Text(trigger.displayName)
-                                Spacer()
-                                Button("Clear") { binding.triggerApp.wrappedValue = nil }
-                            }
-                        } else {
-                            Button("Assign Trigger…") { showTriggerPicker = true }
+                        appListSection(entries: profile.triggerApps, addAction: { showTriggerPicker = true }) { entry in
+                            binding.triggerApps.wrappedValue.removeAll { $0.id == entry.id }
                         }
                         if let msg = triggerConflictMessage {
                             Text(msg).font(.caption).foregroundColor(.red)
@@ -85,14 +79,14 @@ struct ProfileDetailEditor: View {
             }), title: "Add app to Closes")
         }
         .sheet(isPresented: $showTriggerPicker) {
-            AppPickerView(mode: .selectSingle(onSelect: { entry in
-                if viewModel.isTriggerAppTaken(entry.bundleIdentifier, excluding: profileID) {
-                    triggerConflictMessage = "\(entry.displayName) is already a trigger for another profile."
-                } else {
-                    triggerConflictMessage = nil
-                    binding.triggerApp.wrappedValue = entry
-                }
-            }), title: "Assign trigger app")
+            AppPickerView(mode: .multiSelect(initial: profile.triggerApps, onDone: { entries in
+                let conflicts = entries.filter { viewModel.isTriggerAppTaken($0.bundleIdentifier, excluding: profileID) }
+                let accepted = entries.filter { !viewModel.isTriggerAppTaken($0.bundleIdentifier, excluding: profileID) }
+                binding.triggerApps.wrappedValue = accepted
+                triggerConflictMessage = conflicts.isEmpty
+                    ? nil
+                    : "\(conflicts.map(\.displayName).joined(separator: ", ")) already used by another profile."
+            }), title: "Assign trigger apps")
         }
     }
 
