@@ -1,5 +1,11 @@
 # Zwix
 
+[![License: MIT](https://img.shields.io/github/license/mustafaunall/zwix)](LICENSE)
+[![Swift](https://img.shields.io/badge/Swift-5.10%2B-orange?logo=swift)](https://swift.org)
+[![Platform](https://img.shields.io/badge/platform-macOS%2013%2B-lightgrey?logo=apple)](https://www.apple.com/macos/)
+[![GitHub last commit](https://img.shields.io/github/last-commit/mustafaunall/zwix)](https://github.com/mustafaunall/zwix/commits/main)
+[![GitHub stars](https://img.shields.io/github/stars/mustafaunall/zwix?style=social)](https://github.com/mustafaunall/zwix/stargazers)
+
 A native macOS menu bar app for context switching. Define profiles that open and close specific apps — manually, or automatically when a "trigger app" launches.
 
 ## Why
