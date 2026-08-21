@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Combine
 
 /// Manages the status bar item and its dropdown directly with NSStatusItem +
 /// NSPopover instead of SwiftUI's MenuBarExtra. NSPopover's own show/performClose
@@ -10,24 +11,35 @@ import SwiftUI
 final class MenuBarPopoverController: NSObject {
     static let shared = MenuBarPopoverController()
 
+    private static let defaultSymbolName = "switch.2"
+
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
+    private weak var viewModel: ProfilesViewModel?
+    private var cancellables = Set<AnyCancellable>()
 
     private override init() {}
 
     func setup(viewModel: ProfilesViewModel) {
+        self.viewModel = viewModel
+
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        if let button = item.button {
-            button.image = NSImage(systemSymbolName: "switch.2", accessibilityDescription: "Zwix")
-            button.action = #selector(togglePopover)
-            button.target = self
-        }
+        item.button?.action = #selector(togglePopover)
+        item.button?.target = self
         statusItem = item
 
         let pop = NSPopover()
         pop.behavior = .transient
         pop.contentViewController = NSHostingController(rootView: MenuBarContentView().environmentObject(viewModel))
         popover = pop
+
+        updateStatusIcon()
+        viewModel.$activeProfileID
+            .combineLatest(viewModel.$profiles)
+            .sink { [weak self] _, _ in
+                self?.updateStatusIcon()
+            }
+            .store(in: &cancellables)
     }
 
     @objc private func togglePopover() {
@@ -42,5 +54,10 @@ final class MenuBarPopoverController: NSObject {
 
     func close() {
         popover?.performClose(nil)
+    }
+
+    private func updateStatusIcon() {
+        let symbolName = viewModel?.activeProfile?.iconName ?? Self.defaultSymbolName
+        statusItem?.button?.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Zwix")
     }
 }
