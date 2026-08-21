@@ -6,6 +6,7 @@ final class ProfilesViewModel: ObservableObject {
     @Published var profiles: [Profile] = []
     @Published var activeProfileID: UUID?
     @Published var neverCloseApps: [AppEntry] = []
+    @Published var terminationGracePeriod: TimeInterval = PersistedState.defaultTerminationGracePeriod
 
     private let store = ProfileStore()
 
@@ -14,6 +15,7 @@ final class ProfilesViewModel: ObservableObject {
         profiles = state.profiles
         activeProfileID = state.activeProfileID
         neverCloseApps = state.neverCloseApps
+        terminationGracePeriod = state.terminationGracePeriod
     }
 
     var activeProfile: Profile? {
@@ -26,7 +28,12 @@ final class ProfilesViewModel: ObservableObject {
 
     func activate(profile: Profile) async {
         let previous = profiles.first { $0.id == activeProfileID }
-        await ProfileActivator.activate(profile, deactivating: previous, protectedBundleIDs: protectedBundleIDs)
+        await ProfileActivator.activate(
+            profile,
+            deactivating: previous,
+            protectedBundleIDs: protectedBundleIDs,
+            gracePeriod: terminationGracePeriod
+        )
         activeProfileID = profile.id
         persist()
     }
@@ -37,7 +44,12 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func applyCloseListNow(_ profile: Profile) async {
-        await AppTerminator.terminate(profile.closeApps, protectedBundleIDs: protectedBundleIDs)
+        await AppTerminator.terminate(profile.closeApps, protectedBundleIDs: protectedBundleIDs, gracePeriod: terminationGracePeriod)
+    }
+
+    func setTerminationGracePeriod(_ seconds: TimeInterval) {
+        terminationGracePeriod = seconds
+        persist()
     }
 
     @discardableResult
@@ -95,6 +107,11 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     private func persist() {
-        store.save(PersistedState(profiles: profiles, activeProfileID: activeProfileID, neverCloseApps: neverCloseApps))
+        store.save(PersistedState(
+            profiles: profiles,
+            activeProfileID: activeProfileID,
+            neverCloseApps: neverCloseApps,
+            terminationGracePeriod: terminationGracePeriod
+        ))
     }
 }
