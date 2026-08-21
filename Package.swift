@@ -5,6 +5,6 @@ let package = Package(
     name: "Zwix",
     platforms: [.macOS(.v13)],
     targets: [
-        .executableTarget(name: "Zwix", path: "Sources/Zwix")
+        .executableTarget(name: "Zwix", path: "Sources/Zwix", exclude: ["Resources"])
     ]
 )
