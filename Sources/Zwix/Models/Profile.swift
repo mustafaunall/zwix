@@ -49,4 +49,22 @@ struct Profile: Codable, Identifiable, Hashable {
 struct PersistedState: Codable {
     var profiles: [Profile]
     var activeProfileID: UUID?
+    var neverCloseApps: [AppEntry] = []
+
+    private enum CodingKeys: String, CodingKey {
+        case profiles, activeProfileID, neverCloseApps
+    }
+
+    init(profiles: [Profile], activeProfileID: UUID?, neverCloseApps: [AppEntry] = []) {
+        self.profiles = profiles
+        self.activeProfileID = activeProfileID
+        self.neverCloseApps = neverCloseApps
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        profiles = try c.decode([Profile].self, forKey: .profiles)
+        activeProfileID = try c.decodeIfPresent(UUID.self, forKey: .activeProfileID)
+        neverCloseApps = try c.decodeIfPresent([AppEntry].self, forKey: .neverCloseApps) ?? []
+    }
 }

@@ -5,6 +5,7 @@ import Combine
 final class ProfilesViewModel: ObservableObject {
     @Published var profiles: [Profile] = []
     @Published var activeProfileID: UUID?
+    @Published var neverCloseApps: [AppEntry] = []
 
     private let store = ProfileStore()
 
@@ -12,15 +13,20 @@ final class ProfilesViewModel: ObservableObject {
         let state = store.load()
         profiles = state.profiles
         activeProfileID = state.activeProfileID
+        neverCloseApps = state.neverCloseApps
     }
 
     var activeProfile: Profile? {
         profiles.first { $0.id == activeProfileID }
     }
 
+    private var protectedBundleIDs: Set<String> {
+        Set(neverCloseApps.map(\.bundleIdentifier))
+    }
+
     func activate(profile: Profile) async {
         let previous = profiles.first { $0.id == activeProfileID }
-        await ProfileActivator.activate(profile, deactivating: previous)
+        await ProfileActivator.activate(profile, deactivating: previous, protectedBundleIDs: protectedBundleIDs)
         activeProfileID = profile.id
         persist()
     }
@@ -31,7 +37,7 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func applyCloseListNow(_ profile: Profile) async {
-        await AppTerminator.terminate(profile.closeApps)
+        await AppTerminator.terminate(profile.closeApps, protectedBundleIDs: protectedBundleIDs)
     }
 
     @discardableResult
@@ -62,7 +68,18 @@ final class ProfilesViewModel: ObservableObject {
         }
     }
 
+    func addNeverCloseApp(_ entry: AppEntry) {
+        guard !neverCloseApps.contains(where: { $0.bundleIdentifier == entry.bundleIdentifier }) else { return }
+        neverCloseApps.append(entry)
+        persist()
+    }
+
+    func removeNeverCloseApp(_ entry: AppEntry) {
+        neverCloseApps.removeAll { $0.bundleIdentifier == entry.bundleIdentifier }
+        persist()
+    }
+
     private func persist() {
-        store.save(PersistedState(profiles: profiles, activeProfileID: activeProfileID))
+        store.save(PersistedState(profiles: profiles, activeProfileID: activeProfileID, neverCloseApps: neverCloseApps))
     }
 }
