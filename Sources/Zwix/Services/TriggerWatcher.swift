@@ -47,21 +47,28 @@ final class TriggerWatcher {
         guard let vm = viewModel,
               let launched = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
               let bundleID = launched.bundleIdentifier,
-              let matched = vm.profiles.first(where: { $0.triggerApp?.bundleIdentifier == bundleID }),
+              let matched = vm.profiles.first(where: { profile in
+                  profile.triggerApps.contains { $0.bundleIdentifier == bundleID }
+              }),
               vm.activeProfileID != matched.id
         else { return }
         Task { await vm.activate(profile: matched) }
     }
 
-    /// If the currently active profile's trigger app is the one that just quit,
+    /// If the currently active profile has no trigger app left running,
     /// drop back to no-profile-active state.
     private func handleTerminate(_ notification: Notification) {
         guard let vm = viewModel,
               let terminated = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
               let bundleID = terminated.bundleIdentifier,
               let active = vm.activeProfile,
-              active.triggerApp?.bundleIdentifier == bundleID
+              active.triggerApps.contains(where: { $0.bundleIdentifier == bundleID })
         else { return }
-        vm.deactivateCurrent()
+
+        let stillRunning = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
+        let anyTriggerStillRunning = active.triggerApps.contains { stillRunning.contains($0.bundleIdentifier) }
+        if !anyTriggerStillRunning {
+            vm.deactivateCurrent()
+        }
     }
 }
