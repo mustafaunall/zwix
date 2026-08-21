@@ -55,7 +55,7 @@ struct MenuBarContentView: View {
             Divider()
 
             MenuRow(isActive: false) {
-                SettingsWindowController.shared.toggle(viewModel: viewModel)
+                SettingsWindowController.shared.show(viewModel: viewModel)
             } icon: {
                 Image(systemName: "gearshape")
                     .font(.system(size: 14))
