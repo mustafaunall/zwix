@@ -11,6 +11,12 @@ enum ToastNotifier {
         Bundle.main.bundleIdentifier != nil
     }
 
+    private static let byteFormatter: ByteCountFormatter = {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .memory
+        return formatter
+    }()
+
     static func requestAuthorizationIfNeeded() {
         guard isProperlyBundled else { return }
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { _, _ in }
@@ -19,10 +25,28 @@ enum ToastNotifier {
     static func notifyActivation(profileName: String, summary: ProfileActivator.Summary) {
         guard isProperlyBundled, summary.openedCount > 0 || summary.closedCount > 0 else { return }
 
-        let content = UNMutableNotificationContent()
-        content.title = "\(profileName) activated"
-        content.body = "\(summary.openedCount) app\(summary.openedCount == 1 ? "" : "s") opened, "
+        var body = "\(summary.openedCount) app\(summary.openedCount == 1 ? "" : "s") opened, "
             + "\(summary.closedCount) app\(summary.closedCount == 1 ? "" : "s") closed"
+        if summary.freedBytes > 0 {
+            body += " — \(byteFormatter.string(fromByteCount: Int64(summary.freedBytes))) freed"
+        }
+
+        post(title: "\(profileName) activated", body: body)
+    }
+
+    static func notifyFreedMemory(profileName: String, result: AppTerminator.Result) {
+        guard isProperlyBundled, result.count > 0 else { return }
+
+        let body = "\(result.count) app\(result.count == 1 ? "" : "s") closed"
+            + " — \(byteFormatter.string(fromByteCount: Int64(result.freedBytes))) freed"
+
+        post(title: "\(profileName) — RAM freed", body: body)
+    }
+
+    private static func post(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
 
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
