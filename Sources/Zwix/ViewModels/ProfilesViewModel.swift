@@ -66,7 +66,7 @@ final class ProfilesViewModel: ObservableObject {
 
     @discardableResult
     func addProfile(named name: String = "New Profile") -> Profile {
-        let profile = Profile(name: name)
+        let profile = Profile(name: uniqueName(base: name))
         profiles.append(profile)
         persist()
         return profile
@@ -81,10 +81,23 @@ final class ProfilesViewModel: ObservableObject {
             .compactMap { BundleInspector.entry(fromRunning: $0) }
             .filter { !AppTerminator.hardProtectedBundleIDs.contains($0.bundleIdentifier) }
 
-        let profile = Profile(name: name, openApps: openApps)
+        let profile = Profile(name: uniqueName(base: name), openApps: openApps)
         profiles.append(profile)
         persist()
         return profile
+    }
+
+    /// Appends " 2", " 3", etc. to `base` until it no longer collides with
+    /// an existing profile's name. Leaves `base` unchanged if it's already
+    /// unique.
+    private func uniqueName(base: String) -> String {
+        let existingNames = Set(profiles.map(\.name))
+        guard existingNames.contains(base) else { return base }
+        var suffix = 2
+        while existingNames.contains("\(base) \(suffix)") {
+            suffix += 1
+        }
+        return "\(base) \(suffix)"
     }
 
     func updateProfile(_ profile: Profile) {
