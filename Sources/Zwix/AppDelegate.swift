@@ -11,5 +11,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         watcher.start()
         triggerWatcher = watcher
         MenuBarPopoverController.shared.setup(viewModel: viewModel)
+        ToastNotifier.requestAuthorizationIfNeeded()
     }
 }

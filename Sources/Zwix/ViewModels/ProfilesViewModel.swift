@@ -30,12 +30,13 @@ final class ProfilesViewModel: ObservableObject {
         let previous = profiles.first { $0.id == activeProfileID }
         activeProfileID = profile.id
         persist()
-        await ProfileActivator.activate(
+        let summary = await ProfileActivator.activate(
             profile,
             deactivating: previous,
             protectedBundleIDs: protectedBundleIDs,
             gracePeriod: terminationGracePeriod
         )
+        ToastNotifier.notifyActivation(profileName: profile.name, summary: summary)
     }
 
     func deactivateCurrent() {
