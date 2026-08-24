@@ -4,6 +4,7 @@ enum ProfileActivator {
     struct Summary {
         var openedCount: Int
         var closedCount: Int
+        var freedBytes: UInt64
     }
 
     @discardableResult
@@ -14,12 +15,17 @@ enum ProfileActivator {
         gracePeriod: TimeInterval = PersistedState.defaultTerminationGracePeriod
     ) async -> Summary {
         var closedCount = 0
+        var freedBytes: UInt64 = 0
         if let previous {
             let targetOpenIDs = Set(target.openApps.map(\.bundleIdentifier))
             let staleFromPrevious = previous.openApps.filter { !targetOpenIDs.contains($0.bundleIdentifier) }
-            closedCount += await AppTerminator.terminate(staleFromPrevious, protectedBundleIDs: protectedBundleIDs, gracePeriod: gracePeriod)
+            let result = await AppTerminator.terminate(staleFromPrevious, protectedBundleIDs: protectedBundleIDs, gracePeriod: gracePeriod)
+            closedCount += result.count
+            freedBytes += result.freedBytes
         }
-        closedCount += await AppTerminator.terminate(target.closeApps, protectedBundleIDs: protectedBundleIDs, gracePeriod: gracePeriod)
+        let closeResult = await AppTerminator.terminate(target.closeApps, protectedBundleIDs: protectedBundleIDs, gracePeriod: gracePeriod)
+        closedCount += closeResult.count
+        freedBytes += closeResult.freedBytes
 
         let running = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
         var openedCount = 0
@@ -28,7 +34,7 @@ enum ProfileActivator {
             openedCount += 1
         }
 
-        return Summary(openedCount: openedCount, closedCount: closedCount)
+        return Summary(openedCount: openedCount, closedCount: closedCount, freedBytes: freedBytes)
     }
 
     private static func openApp(_ entry: AppEntry) {

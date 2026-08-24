@@ -57,7 +57,8 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func applyCloseListNow(_ profile: Profile) async {
-        await AppTerminator.terminate(profile.closeApps, protectedBundleIDs: protectedBundleIDs, gracePeriod: terminationGracePeriod)
+        let result = await AppTerminator.terminate(profile.closeApps, protectedBundleIDs: protectedBundleIDs, gracePeriod: terminationGracePeriod)
+        ToastNotifier.notifyFreedMemory(profileName: profile.name, result: result)
     }
 
     func setTerminationGracePeriod(_ seconds: TimeInterval) {
