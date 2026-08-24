@@ -28,10 +28,17 @@ Running a local LLM, entering a focused coding session, or joining a meeting all
 ## Building
 
 ```bash
-swift build            # debug build
-swift run               # run directly (menu bar icon appears)
-./Scripts/build-app.sh   # release build, produces dist/Zwix.app (ad-hoc signed)
+swift build              # debug build
+swift run                # run directly (menu bar icon appears)
 ```
+
+Scripts for packaging and installing a release build:
+
+| Script | For | Does |
+|---|---|---|
+| `Scripts/build-app.sh` | contributors, other scripts | builds a release binary and assembles `dist/Zwix.app` (ad-hoc signed) |
+| `Scripts/install.sh` | you, daily personal use | builds the app and installs it straight to `/Applications`, replacing any previous copy |
+| `Scripts/build-dmg.sh <version>` | end users downloading a release | builds the app and packages it as a drag-to-Applications `.dmg` (requires [`create-dmg`](https://github.com/create-dmg/create-dmg): `brew install create-dmg`) |
 
 ## Status
 
