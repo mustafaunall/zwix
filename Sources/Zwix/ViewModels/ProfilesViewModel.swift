@@ -28,19 +28,31 @@ final class ProfilesViewModel: ObservableObject {
 
     func activate(profile: Profile) async {
         let previous = profiles.first { $0.id == activeProfileID }
+        activeProfileID = profile.id
+        persist()
         await ProfileActivator.activate(
             profile,
             deactivating: previous,
             protectedBundleIDs: protectedBundleIDs,
             gracePeriod: terminationGracePeriod
         )
-        activeProfileID = profile.id
-        persist()
     }
 
     func deactivateCurrent() {
         activeProfileID = nil
         persist()
+    }
+
+    /// Routes on the live activeProfileID at call time rather than a
+    /// boolean captured by the view at its last render pass, so a click
+    /// that lands before a SwiftUI redraw catches up still does the
+    /// right thing.
+    func toggleActivation(of profile: Profile) async {
+        if activeProfileID == profile.id {
+            deactivateCurrent()
+        } else {
+            await activate(profile: profile)
+        }
     }
 
     func applyCloseListNow(_ profile: Profile) async {

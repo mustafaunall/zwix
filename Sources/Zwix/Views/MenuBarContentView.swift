@@ -4,6 +4,15 @@ import AppKit
 struct MenuBarContentView: View {
     @EnvironmentObject var viewModel: ProfilesViewModel
 
+    // Passed in explicitly rather than read from viewModel.activeProfileID
+    // directly. If this view's body happens to render while Combine's
+    // willSet-timed publisher is still mid-fire (before the underlying
+    // property is actually mutated), reading the object directly here
+    // returns the stale value. The caller (MenuBarPopoverController)
+    // already has the correct, delivered value at hand — use that instead
+    // of re-reading it, the same fix already applied to the status icon.
+    let activeProfileID: UUID?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Zwix").font(.headline)
@@ -21,14 +30,10 @@ struct MenuBarContentView: View {
                         .padding(12)
                 } else {
                     ForEach(viewModel.profiles) { profile in
-                        let isActive = viewModel.activeProfileID == profile.id
+                        let isActive = activeProfileID == profile.id
                         MenuRow(isActive: isActive) {
                             Task {
-                                if isActive {
-                                    viewModel.deactivateCurrent()
-                                } else {
-                                    await viewModel.activate(profile: profile)
-                                }
+                                await viewModel.toggleActivation(of: profile)
                             }
                         } icon: {
                             ZStack(alignment: .bottomTrailing) {
