@@ -7,6 +7,45 @@ enum ProfileActivator {
         var freedBytes: UInt64
     }
 
+    struct Preview {
+        var toOpenCount: Int
+        var toCloseCount: Int
+    }
+
+    /// Computes what activating `target` would do, without doing any of it —
+    /// no app is opened or closed. Mirrors the same open/close set logic as
+    /// `activate`, just counting against currently-running apps instead of
+    /// acting on them.
+    static func preview(
+        _ target: Profile,
+        deactivating previous: Profile?,
+        protectedBundleIDs: Set<String> = []
+    ) -> Preview {
+        let allProtected = AppTerminator.hardProtectedBundleIDs.union(protectedBundleIDs)
+        let running = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
+
+        var toCloseIDs: Set<String> = []
+        if let previous {
+            let targetOpenIDs = Set(target.openApps.map(\.bundleIdentifier))
+            for entry in previous.openApps where !targetOpenIDs.contains(entry.bundleIdentifier) {
+                toCloseIDs.insert(entry.bundleIdentifier)
+            }
+        }
+        for entry in target.closeApps {
+            toCloseIDs.insert(entry.bundleIdentifier)
+        }
+        let toCloseCount = toCloseIDs
+            .subtracting(allProtected)
+            .filter { running.contains($0) }
+            .count
+
+        let toOpenCount = target.openApps
+            .filter { !running.contains($0.bundleIdentifier) }
+            .count
+
+        return Preview(toOpenCount: toOpenCount, toCloseCount: toCloseCount)
+    }
+
     @discardableResult
     static func activate(
         _ target: Profile,

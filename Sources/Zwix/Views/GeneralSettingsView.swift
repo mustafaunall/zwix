@@ -37,10 +37,23 @@ struct GeneralSettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.04)))
 
+            VStack(alignment: .leading, spacing: 6) {
+                Toggle("Confirm before activating a profile", isOn: Binding(
+                    get: { viewModel.confirmBeforeSwitch },
+                    set: { viewModel.setConfirmBeforeSwitch($0) }
+                ))
+                Text("Shows how many apps will open/close before committing to a switch.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.04)))
+
             Spacer(minLength: 0)
         }
         .padding(20)
-        .frame(width: 340, height: 220)
+        .frame(width: 340, height: 290)
         .onAppear {
             gracePeriod = viewModel.terminationGracePeriod
         }
