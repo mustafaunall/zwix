@@ -40,9 +40,9 @@ final class ProfilesViewModel: ObservableObject {
         Set(neverCloseApps.map(\.bundleIdentifier))
     }
 
-    func activate(profile: Profile) async {
+    func activate(profile: Profile, recordUndo: Bool = true) async {
         let previous = profiles.first { $0.id == activeProfileID }
-        if let previous, previous.id != profile.id {
+        if recordUndo, let previous, previous.id != profile.id {
             undoState = (previous.id, Date())
         }
         activeProfileID = profile.id
@@ -72,7 +72,7 @@ final class ProfilesViewModel: ObservableObject {
               let previousProfile = profiles.first(where: { $0.id == previousID })
         else { return }
         undoState = nil
-        await activate(profile: previousProfile)
+        await activate(profile: previousProfile, recordUndo: false)
     }
 
     /// Routes on the live activeProfileID at call time rather than a
