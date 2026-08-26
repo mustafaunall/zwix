@@ -18,6 +18,11 @@ struct SettingsRootView: View {
                             } label: {
                                 Label("Free RAM Now (close list)", systemImage: "wind")
                             }
+                            Button {
+                                exportProfile(profile)
+                            } label: {
+                                Label("Export…", systemImage: "square.and.arrow.up")
+                            }
                             Button(role: .destructive) {
                                 deleteProfile(profile)
                             } label: {
@@ -65,6 +70,14 @@ struct SettingsRootView: View {
                     }
                     .help("New Empty Profile")
                 }
+                ToolbarItem {
+                    Button {
+                        importProfile()
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .help("Import Profile…")
+                }
             }
         } detail: {
             if let id = selectedProfileID, viewModel.profiles.contains(where: { $0.id == id }) {
@@ -99,5 +112,20 @@ struct SettingsRootView: View {
             selectedProfileID = nil
         }
         viewModel.deleteProfile(profile)
+    }
+
+    private func exportProfile(_ profile: Profile) {
+        guard let data = viewModel.exportData(for: profile),
+              let url = ProfileFileIO.exportPanel(suggestedName: profile.name)
+        else { return }
+        try? data.write(to: url)
+    }
+
+    private func importProfile() {
+        guard let url = ProfileFileIO.importPanel(),
+              let data = try? Data(contentsOf: url),
+              let profile = try? viewModel.importProfile(from: data)
+        else { return }
+        selectedProfileID = profile.id
     }
 }
