@@ -7,6 +7,7 @@ final class ProfilesViewModel: ObservableObject {
     @Published var activeProfileID: UUID?
     @Published var neverCloseApps: [AppEntry] = []
     @Published var terminationGracePeriod: TimeInterval = PersistedState.defaultTerminationGracePeriod
+    @Published var confirmBeforeSwitch: Bool = false
 
     private let store = ProfileStore()
 
@@ -16,6 +17,7 @@ final class ProfilesViewModel: ObservableObject {
         activeProfileID = state.activeProfileID
         neverCloseApps = state.neverCloseApps
         terminationGracePeriod = state.terminationGracePeriod
+        confirmBeforeSwitch = state.confirmBeforeSwitch
     }
 
     var activeProfile: Profile? {
@@ -64,6 +66,16 @@ final class ProfilesViewModel: ObservableObject {
     func setTerminationGracePeriod(_ seconds: TimeInterval) {
         terminationGracePeriod = seconds
         persist()
+    }
+
+    func setConfirmBeforeSwitch(_ enabled: Bool) {
+        confirmBeforeSwitch = enabled
+        persist()
+    }
+
+    func preview(for profile: Profile) -> ProfileActivator.Preview {
+        let previous = profiles.first { $0.id == activeProfileID }
+        return ProfileActivator.preview(profile, deactivating: previous, protectedBundleIDs: protectedBundleIDs)
     }
 
     @discardableResult
@@ -157,7 +169,8 @@ final class ProfilesViewModel: ObservableObject {
             profiles: profiles,
             activeProfileID: activeProfileID,
             neverCloseApps: neverCloseApps,
-            terminationGracePeriod: terminationGracePeriod
+            terminationGracePeriod: terminationGracePeriod,
+            confirmBeforeSwitch: confirmBeforeSwitch
         ))
     }
 }

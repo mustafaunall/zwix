@@ -13,6 +13,8 @@ struct MenuBarContentView: View {
     // of re-reading it, the same fix already applied to the status icon.
     let activeProfileID: UUID?
 
+    @State private var pendingActivation: Profile?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Zwix").font(.headline)
@@ -32,8 +34,12 @@ struct MenuBarContentView: View {
                     ForEach(viewModel.profiles) { profile in
                         let isActive = activeProfileID == profile.id
                         MenuRow(isActive: isActive) {
-                            Task {
-                                await viewModel.toggleActivation(of: profile)
+                            if !isActive && viewModel.confirmBeforeSwitch {
+                                pendingActivation = profile
+                            } else {
+                                Task {
+                                    await viewModel.toggleActivation(of: profile)
+                                }
                             }
                         } icon: {
                             ZStack(alignment: .bottomTrailing) {
@@ -82,6 +88,23 @@ struct MenuBarContentView: View {
             .padding(.bottom, 6)
         }
         .frame(width: 260)
+        .confirmationDialog(
+            pendingActivation.map { "Activate \($0.name)?" } ?? "",
+            isPresented: Binding(
+                get: { pendingActivation != nil },
+                set: { if !$0 { pendingActivation = nil } }
+            ),
+            presenting: pendingActivation
+        ) { profile in
+            Button("Activate") {
+                Task { await viewModel.toggleActivation(of: profile) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { profile in
+            let preview = viewModel.preview(for: profile)
+            Text("\(preview.toOpenCount) app\(preview.toOpenCount == 1 ? "" : "s") will open, "
+                + "\(preview.toCloseCount) app\(preview.toCloseCount == 1 ? "" : "s") will close.")
+        }
     }
 }
 

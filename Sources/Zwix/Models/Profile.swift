@@ -66,21 +66,24 @@ struct PersistedState: Codable {
     var activeProfileID: UUID?
     var neverCloseApps: [AppEntry] = []
     var terminationGracePeriod: TimeInterval = defaultTerminationGracePeriod
+    var confirmBeforeSwitch: Bool = false
 
     private enum CodingKeys: String, CodingKey {
-        case profiles, activeProfileID, neverCloseApps, terminationGracePeriod
+        case profiles, activeProfileID, neverCloseApps, terminationGracePeriod, confirmBeforeSwitch
     }
 
     init(
         profiles: [Profile],
         activeProfileID: UUID?,
         neverCloseApps: [AppEntry] = [],
-        terminationGracePeriod: TimeInterval = defaultTerminationGracePeriod
+        terminationGracePeriod: TimeInterval = defaultTerminationGracePeriod,
+        confirmBeforeSwitch: Bool = false
     ) {
         self.profiles = profiles
         self.activeProfileID = activeProfileID
         self.neverCloseApps = neverCloseApps
         self.terminationGracePeriod = terminationGracePeriod
+        self.confirmBeforeSwitch = confirmBeforeSwitch
     }
 
     init(from decoder: Decoder) throws {
@@ -90,5 +93,6 @@ struct PersistedState: Codable {
         neverCloseApps = try c.decodeIfPresent([AppEntry].self, forKey: .neverCloseApps) ?? []
         terminationGracePeriod = try c.decodeIfPresent(TimeInterval.self, forKey: .terminationGracePeriod)
             ?? Self.defaultTerminationGracePeriod
+        confirmBeforeSwitch = try c.decodeIfPresent(Bool.self, forKey: .confirmBeforeSwitch) ?? false
     }
 }
