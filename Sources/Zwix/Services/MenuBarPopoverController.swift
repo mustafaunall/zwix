@@ -63,7 +63,7 @@ final class MenuBarPopoverController: NSObject {
             .store(in: &cancellables)
     }
 
-    @objc private func togglePopover() {
+    @objc func togglePopover() {
         guard let button = statusItem?.button, let popover, let viewModel else { return }
         if popover.isShown {
             popover.performClose(nil)
