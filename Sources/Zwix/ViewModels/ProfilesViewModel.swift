@@ -116,6 +116,25 @@ final class ProfilesViewModel: ObservableObject {
         persist()
     }
 
+    func exportData(for profile: Profile) -> Data? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try? encoder.encode(profile)
+    }
+
+    /// Decodes a profile from exported JSON and adds it as a new profile.
+    /// Assigns a fresh id (so importing on the same machine that exported
+    /// it doesn't collide with the original) and a collision-free name.
+    @discardableResult
+    func importProfile(from data: Data) throws -> Profile {
+        var profile = try JSONDecoder().decode(Profile.self, from: data)
+        profile.id = UUID()
+        profile.name = uniqueName(base: profile.name)
+        profiles.append(profile)
+        persist()
+        return profile
+    }
+
     func isTriggerAppTaken(_ bundleIdentifier: String, excluding profileID: UUID?) -> Bool {
         profiles.contains { profile in
             profile.id != profileID && profile.triggerApps.contains { $0.bundleIdentifier == bundleIdentifier }
