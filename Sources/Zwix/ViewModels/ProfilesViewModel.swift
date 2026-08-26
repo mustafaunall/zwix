@@ -11,6 +11,18 @@ final class ProfilesViewModel: ObservableObject {
 
     private let store = ProfileStore()
 
+    /// Transient (not persisted) — what to switch back to and when the
+    /// switch that made it undoable happened. Cleared once outside the
+    /// undo window or once the target profile no longer exists.
+    private var undoState: (previousProfileID: UUID, switchedAt: Date)?
+    private let undoWindow: TimeInterval = 30
+
+    var canUndo: Bool {
+        guard let undoState else { return false }
+        return Date().timeIntervalSince(undoState.switchedAt) < undoWindow
+            && profiles.contains { $0.id == undoState.previousProfileID }
+    }
+
     init() {
         let state = store.load()
         profiles = state.profiles
@@ -28,8 +40,11 @@ final class ProfilesViewModel: ObservableObject {
         Set(neverCloseApps.map(\.bundleIdentifier))
     }
 
-    func activate(profile: Profile) async {
+    func activate(profile: Profile, recordUndo: Bool = true) async {
         let previous = profiles.first { $0.id == activeProfileID }
+        if recordUndo, let previous, previous.id != profile.id {
+            undoState = (previous.id, Date())
+        }
         activeProfileID = profile.id
         persist()
         let summary = await ProfileActivator.activate(
@@ -42,8 +57,22 @@ final class ProfilesViewModel: ObservableObject {
     }
 
     func deactivateCurrent() {
+        if let current = profiles.first(where: { $0.id == activeProfileID }) {
+            undoState = (current.id, Date())
+        }
         activeProfileID = nil
         persist()
+    }
+
+    /// Switches back to whatever was active before the last activate/
+    /// deactivate, if that's still possible within the undo window.
+    func undoLastSwitch() async {
+        guard canUndo,
+              let previousID = undoState?.previousProfileID,
+              let previousProfile = profiles.first(where: { $0.id == previousID })
+        else { return }
+        undoState = nil
+        await activate(profile: previousProfile, recordUndo: false)
     }
 
     /// Routes on the live activeProfileID at call time rather than a

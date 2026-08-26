@@ -63,6 +63,19 @@ struct MenuBarContentView: View {
             }
             .padding(.vertical, 4)
 
+            if viewModel.canUndo {
+                Divider()
+                MenuRow(isActive: false) {
+                    Task { await viewModel.undoLastSwitch() }
+                } icon: {
+                    Image(systemName: "arrow.uturn.backward")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                } label: {
+                    Text("Undo Last Switch")
+                }
+            }
+
             Divider()
 
             MenuRow(isActive: false) {
