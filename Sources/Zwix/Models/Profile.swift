@@ -7,6 +7,21 @@ struct AppEntry: Codable, Identifiable, Hashable {
     let bundleURL: URL?
 }
 
+/// Pairs a trigger app with a keyword/path that must appear in that app's
+/// frontmost window title — e.g. VS Code with "zwix" only fires the profile
+/// when the *Zwix* project folder is open, not on any VS Code launch.
+struct WorkspaceTrigger: Codable, Identifiable, Hashable {
+    var id: UUID
+    var app: AppEntry
+    var keyword: String
+
+    init(id: UUID = UUID(), app: AppEntry, keyword: String) {
+        self.id = id
+        self.app = app
+        self.keyword = keyword
+    }
+}
+
 struct Profile: Codable, Identifiable, Hashable {
     var id: UUID
     var name: String
@@ -14,6 +29,7 @@ struct Profile: Codable, Identifiable, Hashable {
     var openApps: [AppEntry]
     var closeApps: [AppEntry]
     var triggerApps: [AppEntry]
+    var workspaceTriggers: [WorkspaceTrigger]
 
     init(
         id: UUID = UUID(),
@@ -21,7 +37,8 @@ struct Profile: Codable, Identifiable, Hashable {
         iconName: String = ProfileIcons.defaultIcon,
         openApps: [AppEntry] = [],
         closeApps: [AppEntry] = [],
-        triggerApps: [AppEntry] = []
+        triggerApps: [AppEntry] = [],
+        workspaceTriggers: [WorkspaceTrigger] = []
     ) {
         self.id = id
         self.name = name
@@ -29,10 +46,11 @@ struct Profile: Codable, Identifiable, Hashable {
         self.openApps = openApps
         self.closeApps = closeApps
         self.triggerApps = triggerApps
+        self.workspaceTriggers = workspaceTriggers
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, iconName, openApps, closeApps, triggerApps
+        case id, name, iconName, openApps, closeApps, triggerApps, workspaceTriggers
     }
 
     private enum LegacyCodingKeys: String, CodingKey {
@@ -56,6 +74,7 @@ struct Profile: Codable, Identifiable, Hashable {
                 triggerApps = []
             }
         }
+        workspaceTriggers = try c.decodeIfPresent([WorkspaceTrigger].self, forKey: .workspaceTriggers) ?? []
     }
 }
 

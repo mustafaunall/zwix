@@ -4,7 +4,15 @@ import AppKit
 final class TriggerWatcher {
     private var launchObserver: NSObjectProtocol?
     private var terminateObserver: NSObjectProtocol?
+    private var activationObserver: NSObjectProtocol?
+    private var workspacePollTimer: Timer?
     private weak var viewModel: ProfilesViewModel?
+
+    /// Polling (rather than an AXObserver per app) keeps this simple and
+    /// covers the common case — a title changing because the user switched
+    /// folders/workspaces in an already-running app — without juggling one
+    /// observer per trigger app's lifecycle.
+    private let workspacePollInterval: TimeInterval = 2
 
     init(viewModel: ProfilesViewModel) {
         self.viewModel = viewModel
@@ -30,6 +38,20 @@ final class TriggerWatcher {
                 self?.handleTerminate(note)
             }
         }
+        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.checkWorkspaceTriggers()
+            }
+        }
+        workspacePollTimer = Timer.scheduledTimer(withTimeInterval: workspacePollInterval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.checkWorkspaceTriggers()
+            }
+        }
     }
 
     func stop() {
@@ -39,8 +61,14 @@ final class TriggerWatcher {
         if let terminateObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(terminateObserver)
         }
+        if let activationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(activationObserver)
+        }
+        workspacePollTimer?.invalidate()
         launchObserver = nil
         terminateObserver = nil
+        activationObserver = nil
+        workspacePollTimer = nil
     }
 
     private func handleLaunch(_ notification: Notification) {
@@ -70,5 +98,31 @@ final class TriggerWatcher {
         if !anyTriggerStillRunning {
             vm.deactivateCurrent()
         }
+    }
+
+    /// Matches the frontmost app's window title against every profile's
+    /// workspace triggers. Only the frontmost app is checked — a background
+    /// window's title isn't "the workspace you're in" the way the active
+    /// one is, and reading every running app's title on each tick would be
+    /// wasteful (and prompt-heavy the first time Accessibility access is
+    /// requested).
+    private func checkWorkspaceTriggers() {
+        guard let vm = viewModel,
+              WindowTitleInspector.hasAccess,
+              let frontmost = NSWorkspace.shared.frontmostApplication,
+              let frontmostBundleID = frontmost.bundleIdentifier
+        else { return }
+
+        guard let matched = vm.profiles.first(where: { profile in
+            profile.workspaceTriggers.contains { trigger in
+                guard trigger.app.bundleIdentifier == frontmostBundleID,
+                      !trigger.keyword.trimmingCharacters(in: .whitespaces).isEmpty
+                else { return false }
+                guard let title = WindowTitleInspector.frontmostWindowTitle(for: frontmost) else { return false }
+                return title.localizedCaseInsensitiveContains(trigger.keyword)
+            }
+        }), vm.activeProfileID != matched.id else { return }
+
+        Task { await vm.activate(profile: matched) }
     }
 }
