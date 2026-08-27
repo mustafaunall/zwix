@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         triggerWatcher = watcher
         MenuBarPopoverController.shared.setup(viewModel: viewModel)
         ToastNotifier.requestAuthorizationIfNeeded()
+        WindowTitleInspector.requestAccessIfNeeded()
 
         // ⌥⌘Z — Spotlight-style quick access to the profile switcher
         // without reaching for the menu bar.

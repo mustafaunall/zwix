@@ -8,6 +8,9 @@ struct ProfileDetailEditor: View {
     @State private var showClosePicker = false
     @State private var showTriggerPicker = false
     @State private var triggerConflictMessage: String?
+    @State private var showWorkspaceAppPicker = false
+    @State private var pendingWorkspaceApp: AppEntry?
+    @State private var pendingWorkspaceKeyword = ""
 
     private var profile: Profile {
         viewModel.profiles.first(where: { $0.id == profileID }) ?? Profile(id: profileID, name: "")
@@ -65,6 +68,15 @@ struct ProfileDetailEditor: View {
                         }
                     }
                 }
+
+                card(title: "Workspace Triggers", systemImage: "folder.badge.gearshape") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Activates this profile when the app is frontmost and its window title contains the keyword — e.g. VS Code + \"zwix\" only fires for that project folder.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        workspaceTriggerListSection()
+                    }
+                }
             }
             .padding(20)
         }
@@ -88,6 +100,68 @@ struct ProfileDetailEditor: View {
                     : "\(conflicts.map(\.displayName).joined(separator: ", ")) already used by another profile."
             }), title: "Assign trigger apps")
         }
+        .sheet(isPresented: $showWorkspaceAppPicker) {
+            AppPickerView(mode: .selectSingle(onSelect: { entry in
+                pendingWorkspaceApp = entry
+            }), title: "Pick app for workspace trigger")
+        }
+        .sheet(item: $pendingWorkspaceApp) { app in
+            workspaceKeywordSheet(for: app)
+        }
+    }
+
+    @ViewBuilder
+    private func workspaceTriggerListSection() -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if profile.workspaceTriggers.isEmpty {
+                Text("None").font(.caption).foregroundColor(.secondary)
+            } else {
+                ForEach(profile.workspaceTriggers) { trigger in
+                    HStack {
+                        Text("\(trigger.app.displayName) — \"\(trigger.keyword)\"")
+                        Spacer()
+                        Button {
+                            binding.workspaceTriggers.wrappedValue.removeAll { $0.id == trigger.id }
+                        } label: {
+                            Image(systemName: "minus.circle")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            Button("Add Workspace Trigger…") { showWorkspaceAppPicker = true }
+                .padding(.top, profile.workspaceTriggers.isEmpty ? 0 : 4)
+        }
+    }
+
+    @ViewBuilder
+    private func workspaceKeywordSheet(for app: AppEntry) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Workspace keyword").font(.headline)
+            Text("Text to look for in \(app.displayName)'s window title (e.g. a folder or project name).")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            TextField("Folder or project name", text: $pendingWorkspaceKeyword)
+                .textFieldStyle(.roundedBorder)
+            HStack {
+                Spacer()
+                Button("Cancel") {
+                    pendingWorkspaceApp = nil
+                    pendingWorkspaceKeyword = ""
+                }
+                Button("Add") {
+                    let keyword = pendingWorkspaceKeyword.trimmingCharacters(in: .whitespaces)
+                    guard !keyword.isEmpty else { return }
+                    binding.workspaceTriggers.wrappedValue.append(WorkspaceTrigger(app: app, keyword: keyword))
+                    pendingWorkspaceApp = nil
+                    pendingWorkspaceKeyword = ""
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(pendingWorkspaceKeyword.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 320)
     }
 
     @ViewBuilder
